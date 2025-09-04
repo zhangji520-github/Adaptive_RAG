@@ -17,7 +17,7 @@ from langgraph.graph import MessagesState
 from typing import Literal
 from utils.log_utils import log
 from langchain_core.messages import HumanMessage
-
+from src.agent.node import get_last_human_message
 
 # 定义结构化输出的state
 class GradeDocuments(BaseModel):
@@ -32,7 +32,7 @@ def grade_documents(state: MessagesState) -> Literal["accept", "ignore"]:
     """Grade documents based on relevance to the question"""
     log.info("*****Start grade the documents based on relevance to the question*****")
     messages = state['messages']
-    question = messages[0].content
+    question = get_last_human_message(messages).content
     context = messages[-1].content
     prompt = GRADE_PROMPT.format(question=question, context=context)
     response = llm.with_structured_output(GradeDocuments).invoke([HumanMessage(content=prompt)])
