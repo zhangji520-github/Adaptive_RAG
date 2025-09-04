@@ -9,7 +9,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from src.agent.node import generate_query_or_respond, rewrite_question, generate_answer
 from src.tools.retrieval_tools import retrieval_tool
 from src.agent.conditional import grade_documents
-from langgraph.checkpoint.memory import MemorySaver
+# from langgraph.checkpoint.memory import MemorySaver
 workflow = StateGraph(MessagesState)
 
 # Define the nodes we will cycle between
@@ -45,15 +45,13 @@ workflow.add_conditional_edges(
 workflow.add_edge("generate_answer", END)
 workflow.add_edge("rewrite_question", "generate_query_or_respond")
 
-
-
 # 检查点让状态图可以持久化其状态
 # 这是整个状态图的完整内存
-memory = MemorySaver()
+# memory = MemorySaver()
 
-# 编译状态图，配置检查点为memory, 配置中断点
-graph = workflow.compile(checkpointer=memory)
-
+# 编译状态图，配置检查点为memory, 配置中断点 如果用langgraph dev就不用传入记忆
+# graph = workflow.compile(checkpointer=memory)
+graph = workflow.compile()
 # 画图 - 输出 Mermaid 代码到控制台
 # print("LangGraph 流程图:")
 # print(graph.get_graph().draw_mermaid())
