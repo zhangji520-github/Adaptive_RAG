@@ -103,7 +103,7 @@ def debug_retrieval_function(query: str) -> str:
 # 创建包装后的检索工具
 retrieval_tool = Tool(
     name="retrieval_tool",
-    description="用于检索并返回有关'半导体和芯片'的信息，内容包含：半导体和芯片的封装测试等",
+    description="用于检索并返回有关'半导体和芯片'的信息，内容包含：半导体和芯片相关的封装测试等",
     func=debug_retrieval_function
 )
 

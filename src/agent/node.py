@@ -12,8 +12,8 @@ from src.tools.retrieval_tools import retrieval_tool
 from langchain_core.messages import HumanMessage, convert_to_messages, BaseMessage
 from src.agent.prompt import REWRITE_PROMPT, GENERATE_PROMPT
 from utils.log_utils import log
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import PromptTemplate
+# from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.prompts import PromptTemplate
 
 model_with_tools = llm.bind_tools([retrieval_tool])
 # 获取最后一个HumanMessage
