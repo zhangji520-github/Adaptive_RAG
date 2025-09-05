@@ -16,15 +16,29 @@ from src.agent.conditional import retrieval_grade
 # from langchain_core.prompts import PromptTemplate
 
 
-
-
-
-
-
 # *******************生成答案节点*******************
 # post_processing
 def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+    """
+    格式化文档，支持不同类型的文档格式
+    """
+    formatted_docs = []
+    for doc in docs:
+        if hasattr(doc, 'page_content'):
+            # Document对象（来自向量数据库）
+            formatted_docs.append(doc.page_content)
+        elif isinstance(doc, str):
+            # 字符串格式（来自网络搜索）
+            formatted_docs.append(doc)
+        elif isinstance(doc, dict):
+            # 字典格式，尝试提取内容
+            content = doc.get('content') or doc.get('text') or doc.get('snippet') or str(doc)
+            formatted_docs.append(content)
+        else:
+            # 其他格式，转为字符串
+            formatted_docs.append(str(doc))
+    
+    return "\n\n".join(formatted_docs)
 
 def generate(state):
     """
