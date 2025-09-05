@@ -64,5 +64,5 @@ workflow.add_conditional_edges(
 # graph = workflow.compile(checkpointer=memory)
 graph = workflow.compile()
 # 画图 - 输出 Mermaid 代码到控制台
-print("LangGraph 流程图:")
-print(graph.get_graph().draw_mermaid())
+# print("LangGraph 流程图:")
+# print(graph.get_graph().draw_mermaid())
