@@ -23,9 +23,9 @@ if __name__ == "__main__":
             break
         else:
             inputs = {
-                "messages": [
-                    ("user", question),
-                ]
+                "question": question,
+                "generation": "",
+                "documents": []
             }
             events = graph.stream(inputs, config=config, stream_mode='values')
             # 打印消息

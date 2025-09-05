@@ -9,9 +9,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.agent.prompt import ROUTER_FOR_QUERY_ANALYSIS_PROMPT, RETRIEVAL_GRADE_PROMPT, HALLUCINATION_GRADE_PROMPT, ANSWER_RELEVANCE_GRADE_PROMPT
 from pydantic import BaseModel, Field
 from llm_utils import llm
-from langgraph.graph import MessagesState
 from typing import Literal
 from utils.log_utils import log
+from src.agent.state import GraphState
 # from langchain_core.messages import HumanMessage
 # from src.agent.node import get_last_human_message
 
@@ -35,7 +35,7 @@ route_prompt = ChatPromptTemplate.from_messages(
 question_router = route_prompt | llm.with_structured_output(RouteQueryAnalysis)
 
 # 第一个路由函数，判断检索到的文档是否与问题相关 如果相关返回"vector"，否则返回"web"
-def route_question(state: MessagesState) -> MessagesState:
+def route_question(state: GraphState) -> str:
     """
     Route question to web search or RAG.
 
@@ -46,7 +46,7 @@ def route_question(state: MessagesState) -> MessagesState:
         str: Next node to call
     """
     log.info("*****Start route the question to web search or RAG or direct answer*****")
-    question = state['messages']
+    question = state['question']
     source = question_router.invoke({"question": question})
     if source.datasource == "vector_database":
         print("Route to vector database")

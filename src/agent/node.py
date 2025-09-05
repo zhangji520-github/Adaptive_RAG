@@ -99,6 +99,21 @@ def transform_query(state):
     better_question = question_rewriter.invoke({"question": question})
     return {"question": better_question, "documents": documents}
 
+def direct_answer(state):
+    """
+    Generate direct answer for simple questions without retrieval
+    """
+    log.info("*****Start generate direct answer*****")
+    question = state["question"]
+    
+    # 为简单问题生成直接回答
+    direct_prompt = ChatPromptTemplate.from_messages([
+        ("human", "请对以下问题给出俏皮的回答：{question}")
+    ])
+    direct_chain = direct_prompt | llm | StrOutputParser()
+    generation = direct_chain.invoke({"question": question})
+    return {"question": question, "generation": generation, "documents": []}
+
 
 if __name__ == "__main__":
     res = generate({"question": "半导体优势是什么", "documents": [Document(page_content="半导体优势是能够提高生产效率和产品质量，降低成本，提高竞争力。")]})

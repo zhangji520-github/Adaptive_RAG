@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.tools.retrieval_tools import retrieve
 from src.tools.web_search_tool import web_search
 from langgraph.graph import StateGraph, START, END
-from src.agent.node import generate, grade_documents, decide_to_generate, transform_query
+from src.agent.node import generate, grade_documents, decide_to_generate, transform_query, direct_answer
 from src.agent.conditional import grade_hallucination_and_answer, route_question
 from src.agent.state import GraphState
 # from langgraph.checkpoint.memory import MemorySaver
@@ -21,6 +21,7 @@ workflow.add_node("web_search", web_search)
 workflow.add_node("generate", generate)
 workflow.add_node("grade_documents", grade_documents)
 workflow.add_node("transform_query", transform_query)
+workflow.add_node("direct_answer", direct_answer)
 
 
 # 先从路由节点开始 判断是web搜索还是进入数据库
@@ -30,11 +31,12 @@ workflow.add_conditional_edges(
     {
         "vector": "retrieve",
         "web": "web_search",
-        "direct_answer": END,
+        "direct_answer": "direct_answer",
     }
 )
 workflow.add_edge("web_search", "generate")
 workflow.add_edge("retrieve", "grade_documents")
+workflow.add_edge("direct_answer", END)
 workflow.add_conditional_edges(
     "grade_documents",
     decide_to_generate,
