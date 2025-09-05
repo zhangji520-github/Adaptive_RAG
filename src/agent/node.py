@@ -1,144 +1,105 @@
 import sys
 import os
-from typing import List
 
 # 添加项目根目录到Python路径
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from langgraph.graph import MessagesState
+from langchain_core.prompts import ChatPromptTemplate
 from llm_utils import llm
-from src.tools.retrieval_tools import retrieval_tool
-from langchain_core.messages import HumanMessage, convert_to_messages, BaseMessage
-from src.agent.prompt import REWRITE_PROMPT, GENERATE_PROMPT
+from src.agent.prompt import QUESTIONING_REWRITING_PROMPT, RAG_PROMPT_TEMPLATE
 from utils.log_utils import log
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.documents import Document
+from src.agent.conditional import retrieval_grade
 # from langchain_core.output_parsers import StrOutputParser
 # from langchain_core.prompts import PromptTemplate
 
-model_with_tools = llm.bind_tools([retrieval_tool])
-# 获取最后一个HumanMessage
-def get_last_human_message(messages: List[BaseMessage]) -> HumanMessage:
-    """Get the last HumanMessage from a list of messages"""
-    for msg in reversed(messages):
-        if isinstance(msg, HumanMessage):
-            return msg
-    raise ValueError("No HumanMessage found in messages")
 
-def generate_query_or_respond(state: MessagesState) -> MessagesState:
-    """Call the model to generate a response based on the current state. Given
-    the question, it will decide to retrieve using the retriever tool, or simply respond to the user.
+
+
+
+
+
+# *******************生成答案节点*******************
+# post_processing
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+def generate(state):
     """
-    log.info("*****Start generate a query or respond using the model*****")
-    res = (
-        model_with_tools.invoke([state['messages'][-1]])          # 我们把第一次用户的HumanMessage传给模型
-    )
-    return {
-        'messages': [res]
-    }
+    Generate answer
 
-# 写法1 用.format 格式化字符串的写法
-def rewrite_question(state: MessagesState) -> MessagesState:
-    """Rewrite the question using the model"""
-    log.info("*****Start rewrite the question using the model*****")    
-    messages = state['messages']
-    question = get_last_human_message(messages).content
+    Args:
+        state (dict): The current graph state
 
-    # 使用字符串格式化替换占位符
-    formatted_prompt = REWRITE_PROMPT.format(question=question)
+    Returns:
+        state (dict): New key added to state, generation, that contains LLM generation
+    """
+    log.info("*****Start generate answer*****")
+    question = state["question"]
+    documents = state["documents"]
     
-    msg = HumanMessage(content=formatted_prompt)
-    res = llm.invoke([msg])  # 注意这里传入的是消息列表
-    
-    return {
-        'messages': [res]
-    }
-# 写法2 用chain的写法
-# def rewrite_question(state: MessagesState) -> MessagesState:
-#     """Rewrite the question using the model"""
-#     messages = state['messages']
-#     question = get_last_human_message(messages).content
-    
-#     # 创建PromptTemplate并使用管道
-#     prompt_template = PromptTemplate(template=REWRITE_PROMPT, input_variables=["question"])
-#     chain_rewrite = (
-#         prompt_template
-#         | llm
-#         | StrOutputParser()
-#     )
-    
-#     response = chain_rewrite.invoke({"question": question})       # 这里拿到的直接就是文本
-#     ai_msg = AIMessage(content=response)   
-#     return {
-#         'messages': [ai_msg]
-#     }
-# 写法1 用.format 格式化字符串的写法
-def generate_answer(state: MessagesState) -> MessagesState:
-    """Generate an answer using the model"""
-    log.info("*****Start generate an answer using the model*****")
-    messages = state['messages']
-    question = get_last_human_message(messages).content      # 第一个节点的content就是用户问题
-    context = messages[-1].content      # 上一个节点就是retrieval检索节点，他的content就是检索结果
-    prompt = GENERATE_PROMPT.format(question=question, context=context)
-    res = model_with_tools.invoke([HumanMessage(content=prompt)])
-    return {
-        # 'messages': messages + [res]       # 这样会保存所有的消息，包括原始问题和检索结果
-        'messages': [res]
-    }
-# 写法2 用chain的写法
-# def generate_answer(state: MessagesState) -> MessagesState:
-#     """Generate an answer using the model"""
-#     log.info("*****Start generate an answer using the model*****")
-#     messages = state['messages']
+    # RAG generation - 将字符串模板转换为ChatPromptTemplate
+    rag_prompt = ChatPromptTemplate.from_messages([
+        ("human", RAG_PROMPT_TEMPLATE)
+    ])
+    rag_chain = rag_prompt | llm | StrOutputParser()
+    generation = rag_chain.invoke({"context": format_docs(documents), "question": question})
+    return {"documents": documents, "question": question, "generation": generation}
 
-#     question = get_last_human_message(messages).content      # 第一个节点的content就是用户问题
-#     context = messages[-1].content      # 上一个节点就是retrieval检索节点，他的content就是检索结果
+# *******************对通过向量数据库检索（retrieve 节点）得到的文档进行相关性评估，过滤掉与用户问题无关的内容*******************
+def grade_documents(state):
+    """
+    Grade documents
+    """
+    log.info("*****Start grade documents*****")
+    question = state["question"]
+    documents = state["documents"]
+    
+    filter_doc = []
+    for d in documents:
+        score = retrieval_grade.invoke({"question": question, "documents": d})
+        if score.binary_score == "yes":
+            filter_doc.append(d)
+        else:
+            continue
+    return {"documents": filter_doc, "question": question}
 
-#     generate_prompt = PromptTemplate(template=GENERATE_PROMPT, input_variables=["question", "context"])
-#     chain_generate = (
-#         generate_prompt
-#         | llm
-#         | StrOutputParser()
-#     )
-#     res = chain_generate.invoke({"question": question, "context": context})
-#     ai_msg = AIMessage(content=res)
-#     return {
-#         'messages': [ai_msg]
-#     }
+# 根据过滤情况选择是否生成/回退重写问题 路由函数
+def decide_to_generate(state):
+    """
+    Decide to generate or rewrite question
+    """
+    log.info("*****Start decide to generate or rewrite question*****")
+    filtered_documents = state["documents"]
+    if not filtered_documents:
+        print("😒Decision: ALL documents are irrelevant to the question. I think I should rewrite the question.")
+        return "rewrite_question"
+    else:
+        print("😊Decision: Some documents are relevant to the question. I think I should generate the answer.")
+        return "generate_answer"
+    
+# *******************问题重写节点 通过提示词在转化成Runnable对象*******************
+rewrite_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", QUESTIONING_REWRITING_PROMPT),
+        ("human", "Here is the initial question: \n\n {question}\n\n Formulate an improved question.")
+    ]
+)
+question_rewriter = rewrite_prompt | llm | StrOutputParser()    
+def transform_query(state):
+    """
+    Transform the query to produce a better question.
+    """
+    log.info("*****Start transform the query to produce a better question*****")
+    question = state["question"]
+    documents = state["documents"]
+
+    better_question = question_rewriter.invoke({"question": question})
+    return {"question": better_question, "documents": documents}
+
 
 if __name__ == "__main__":
-    # input = {"messages": [HumanMessage(content="半导体优势是什么")]}
-    # res = generate_query_or_respond(input)
-    # print(res)
-    # input = {"messages": [HumanMessage(content="半导体优势是什么")]}
-    # res = rewrite_question(input)
-    # res['messages'][-1].pretty_print()
-    input = {
-        "messages": convert_to_messages(
-            [
-                {
-                    "role": "user",
-                    "content": "半导体优势是什么"
-                },
-                {
-                    "role": "assistant",
-                    "content": "",
-                    "tool_calls": [
-                        {
-                            "id": "1",
-                            "name": "retrieval_tool",
-                            "args": {
-                                "query": "半导体优势是什么"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "role": "tool",
-                    "content": "半导体优势是能够提高生产效率和产品质量，降低成本，提高竞争力。",
-                    "tool_call_id": "1",
-                }
-            ]
-        )
-    }
-    res = generate_answer(input)
+    res = generate({"question": "半导体优势是什么", "documents": [Document(page_content="半导体优势是能够提高生产效率和产品质量，降低成本，提高竞争力。")]})
     print(res)

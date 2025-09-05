@@ -1,49 +1,58 @@
 import sys
 import os
+
+
 # 添加项目根目录到Python路径
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from langgraph.graph import StateGraph, MessagesState, START, END
-from langgraph.prebuilt import ToolNode, tools_condition
-from src.agent.node import generate_query_or_respond, rewrite_question, generate_answer
-from src.tools.retrieval_tools import retrieval_tool
-from src.agent.conditional import grade_documents
+from src.tools.retrieval_tools import retrieve
+from src.tools.web_search_tool import web_search
+from langgraph.graph import StateGraph, START, END
+from src.agent.node import generate, grade_documents, decide_to_generate, transform_query
+from src.agent.conditional import grade_hallucination_and_answer, route_question
+from src.agent.state import GraphState
 # from langgraph.checkpoint.memory import MemorySaver
-workflow = StateGraph(MessagesState)
+workflow = StateGraph(GraphState)
 
 # Define the nodes we will cycle between
-workflow.add_node("generate_query_or_respond", generate_query_or_respond)
-workflow.add_node("rewrite_question", rewrite_question)
-workflow.add_node("generate_answer", generate_answer)
-workflow.add_node("retrieval", ToolNode([retrieval_tool]))
+workflow.add_node("retrieve", retrieve)
+workflow.add_node("web_search", web_search)
+workflow.add_node("generate", generate)
+workflow.add_node("grade_documents", grade_documents)
+workflow.add_node("transform_query", transform_query)
 
 
-workflow.add_edge(START, "generate_query_or_respond")
-# 第一次conditional_edge 如果 generate_query_or_respond 返回了 tool_calls ，则调用 retriever_tool 以获取上下文 否则直接响应用户
+# 先从路由节点开始 判断是web搜索还是进入数据库
 workflow.add_conditional_edges(
-    "generate_query_or_respond",
-    # Assess LLM decision (call `retriever_tool` tool or respond to the user)
-    tools_condition,
+    START,
+    route_question,
     {
-        "tools": "retrieval",
-        END: END
+        "vector": "retrieve",
+        "web": "web_search",
+        "direct_answer": END,
+    }
+)
+workflow.add_edge("web_search", "generate")
+workflow.add_edge("retrieve", "grade_documents")
+workflow.add_conditional_edges(
+    "grade_documents",
+    decide_to_generate,
+    {
+        "generate_answer": "generate",
+        "rewrite_question": "transform_query",
+    }
+)
+workflow.add_conditional_edges(
+    "generate",
+    grade_hallucination_and_answer,
+    {
+        "useful": END,
+        "not useful": "transform_query",
+        "not supported": "generate",
     }
 )
 
-# 第二次conditional_edge 对检索到的文档内容进行与问题相关性的评分（ grade_documents ），并路由至下一步：
-# 若不相关，使用 rewrite_question 重写问题，然后再次调用 若相关，继续执行 generate_answer ，并使用检索到的文档上下文通过 ToolMessage 生成最终响应
-workflow.add_conditional_edges(
-    "retrieval",
-    grade_documents,
-    {
-        "accept": "generate_answer",
-        "ignore": "rewrite_question",
-    }
-)
-
-workflow.add_edge("generate_answer", END)
-workflow.add_edge("rewrite_question", "generate_query_or_respond")
 
 # 检查点让状态图可以持久化其状态
 # 这是整个状态图的完整内存
@@ -53,5 +62,5 @@ workflow.add_edge("rewrite_question", "generate_query_or_respond")
 # graph = workflow.compile(checkpointer=memory)
 graph = workflow.compile()
 # 画图 - 输出 Mermaid 代码到控制台
-# print("LangGraph 流程图:")
-# print(graph.get_graph().draw_mermaid())
+print("LangGraph 流程图:")
+print(graph.get_graph().draw_mermaid())

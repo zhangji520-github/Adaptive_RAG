@@ -2,7 +2,7 @@ from env_utils import MILVUS_URI, COLLECTION_NAME
 from langchain_milvus import Milvus, BM25BuiltInFunction
 from llm_utils import openai_embedding
 from utils.log_utils import log
-from langchain.tools import Tool
+
 
 def create_vectorstore():
     """创建向量存储，确保在正确的上下文中初始化"""
@@ -75,38 +75,23 @@ def create_retriever():
 
 retriever = create_retriever()
 
-# 创建一个包装函数来添加调试信息
-def debug_retrieval_function(query: str) -> str:
-    """包装检索函数，添加调试信息"""
-    try:
-        log.info(f"开始执行检索，查询: {query}")
-        results = retriever.get_relevant_documents(query)
-        log.info(f"检索完成，返回 {len(results)} 个结果")
-        
-        if not results:
-            log.warning("检索结果为空，可能是过滤条件过于严格")
-            return "未找到相关信息，请尝试重新表述您的问题。"
-        
-        # 格式化结果
-        formatted_results = []
-        for i, doc in enumerate(results, 1):
-            formatted_results.append(f"结果 {i}: {doc.page_content}")
-        
-        result_text = "\n\n".join(formatted_results)
-        log.info(f"返回格式化结果，长度: {len(result_text)} 字符")
-        return result_text
-        
-    except Exception as e:
-        log.error(f"检索过程中发生错误: {e}")
-        return f"检索过程中发生错误: {str(e)}"
+def retrieve(state):
+    """
+    Retrieve documents
 
-# 创建包装后的检索工具
-retrieval_tool = Tool(
-    name="retrieval_tool",
-    description="用于检索并返回有关'半导体和芯片'的信息，内容包含：半导体和芯片相关的封装测试等",
-    func=debug_retrieval_function
-)
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): New key added to state, documents, that contains retrieved documents
+    """
+    print("---RETRIEVE---")
+    question = state["question"]
+
+    # Retrieval
+    documents = retriever.invoke(question)
+    return {"documents": documents, "question": question}
 
 if __name__ == "__main__":
-    res = retrieval_tool.invoke("半导体和芯片的优势")
+    res = retrieve({"question": "半导体优势是什么"})
     print(res)

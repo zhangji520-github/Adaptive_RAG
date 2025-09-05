@@ -14,6 +14,7 @@ dependencies = [
     "langchain-experimental>=0.3.4",
     "langchain-milvus>=0.2.1",
     "langchain-openai>=0.3.32",
+    "langchain-tavily>=0.2.11",
     "langgraph>=0.2.6",
     "loguru>=0.7.3",
     "openai>=1.105.0",
