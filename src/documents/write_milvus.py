@@ -101,6 +101,9 @@ if __name__ == '__main__':
     # 等待解析进程结束
     parser_process.join()
     log.info("文件解析进程已结束")
+    #  🔥 重要：补上结束信号！
+    docs_queue.put(None)  # 通知写入进程可以退出了
+
     write_process.join()
     log.info("Milvus 写入进程已结束")
 
