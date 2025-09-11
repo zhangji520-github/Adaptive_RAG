@@ -83,7 +83,6 @@ if __name__ == '__main__':
     md_dir = r"E:\Workspace\ai\RAG\datas\md"         # 当然如果需要转化pdf 可以写一个 pdf_parser.py
     queue_maxsize = 20   # 队列最大长度，防止内存占用过高
 
-
     mv = MilvusVectorSave()
     mv.create_collection(is_first=True)  # 建表
 
