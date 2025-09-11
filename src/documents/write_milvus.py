@@ -10,8 +10,8 @@ import time, os
 from utils.log_utils import log
 from markdown_parser import MarkdownParser
 from milvus_db_with_schema import MilvusVectorSave
-# 采用多进程 分布式 的方式把海量的数据写入 Milvus 数据库 建立一个共享的队列(内部维护着数据的共享)，多个进程可以向队列里存/取数据
 
+# 采用多进程 分布式 的方式把海量的数据写入 Milvus 数据库 建立一个共享的队列(内部维护着数据的共享)，多个进程可以向队列里存/取数据
 def file_parser_process(dir_path: str, output_queue: Queue, batch_size: int = 20):
     """进程1: 解析目录下所有的md文件并分批放入到队列中"""
     log.info(f"文件解析进程启动，解析目录: {dir_path}")

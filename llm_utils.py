@@ -23,7 +23,7 @@ openai_embedding = OpenAIEmbeddings(
 
 qwen_embeddings = DashScopeEmbeddings(
     model="text-embedding-v4", 
-    dashscope_api_key=os.environ["DASHSCOPE_API_KEY"],
+    dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
     # DashScopeEmbeddings 内部会自动处理批处理大小限制
 )
 
