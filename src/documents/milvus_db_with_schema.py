@@ -36,16 +36,15 @@ class MilvusVectorSave:
         schema = client.create_schema()
 
         schema.add_field("id", DataType.INT64, is_primary=True, auto_id=True)
-        schema.add_field("category", DataType.VARCHAR, max_length=1000)
-        schema.add_field("source", DataType.VARCHAR, max_length=1000)
-        schema.add_field("category_depth", DataType.INT64)
-        schema.add_field("filename", DataType.VARCHAR, max_length=1000)
-        schema.add_field("filetype", DataType.VARCHAR, max_length=1000)
-        schema.add_field("title", DataType.VARCHAR, max_length=1000)
-        # schema.add_field("text", DataType.VARCHAR, max_length=6000, enable_analyzer=True, analyzer_params={"type": "chinese"}) # 注意如果语料是中文，需要开启分词器为中文
-        schema.add_field("text", DataType.VARCHAR, max_length=6000, enable_analyzer=True, analyzer_params={"tokenizer": "jieba"}) # 注意如果语料是中文，需要开启分词器为中文
-        schema.add_field("sparse", DataType.SPARSE_FLOAT_VECTOR)
-        schema.add_field("dense", DataType.FLOAT_VECTOR, dim=1024 )
+        schema.add_field("category", DataType.VARCHAR, max_length=1000)     # 来自metadata
+        schema.add_field("source", DataType.VARCHAR, max_length=1000)       # 来自metadata
+        schema.add_field("category_depth", DataType.INT64)                  # 来自metadata
+        schema.add_field("filename", DataType.VARCHAR, max_length=1000)     # 来自metadata
+        schema.add_field("filetype", DataType.VARCHAR, max_length=1000)     # 来自metadata
+        schema.add_field("title", DataType.VARCHAR, max_length=1000)        # 来自metadata
+        schema.add_field("text", DataType.VARCHAR, max_length=6000)         # ⭐ 来自page_content
+        schema.add_field("sparse", DataType.SPARSE_FLOAT_VECTOR)            # 自动生成（BM25）
+        schema.add_field("dense", DataType.FLOAT_VECTOR, dim=1024)          # 自动生成（OpenAI）
 
         # 3 构建用于全文搜索的 bm25 Function
         # bm25用于将文本字段转化为稀疏向量字段 用于全文检索

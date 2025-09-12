@@ -1,7 +1,5 @@
 import sys
 import os
-
-from sympy import vector
 # 添加上级目录到 Python 路径
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -10,7 +8,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 
 from langchain.prompts import PromptTemplate
-from markdown_parser import MarkdownParser
 from langchain_milvus import Milvus, BM25BuiltInFunction
 from env_utils import MILVUS_URI, COLLECTION_NAME
 # Define the prompt template for generating AI responses

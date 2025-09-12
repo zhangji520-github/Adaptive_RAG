@@ -116,16 +116,16 @@ def grade_hallucination_and_answer(state):
     hallucination_score = hallucination_grade.invoke({"documents": documents, "generation": generation})
     # 先检查幻觉 如果yes说明 LLM 生成的内容是基于/受一组检索到的 事实支持的 继续进行   答案评测
     if hallucination_score.binary_score == "yes":
-        print("Hallucination check passed")
+        print("Good!😊 Hallucination check passed!I think next we will judge whether the answer is useful")
         answer_score = answer_grade.invoke({"question": question, "generation": generation})
         if answer_score.binary_score == "yes":
-            print("Answer check passed")
+            print("Excellent!✨ Answer check passed!I think next we will generate the answer")
             return "useful"
         else:
-            print("Answer check failed")
+            print("Sorry!😥 Answer check failed,I think next we will rewrite the question")
             return "not useful"
     else:
-        print("Hallucination check failed")
+        print("Sorry!😥 Hallucination check failed,I think next we will rewrite the question")
         return "not supported"
     
 

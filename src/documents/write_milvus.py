@@ -1,12 +1,9 @@
 import sys
 import os
-
-from numpy import doc
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from multiprocessing import Process, Queue
-import time, os
+import time
 from utils.log_utils import log
 from markdown_parser import MarkdownParser
 from milvus_db_with_schema import MilvusVectorSave
@@ -101,7 +98,7 @@ if __name__ == '__main__':
     # 等待解析进程结束
     parser_process.join()
     log.info("文件解析进程已结束")
-    #  🔥 重要：补上结束信号！
+    # 🔥重要：补上结束信号！
     docs_queue.put(None)  # 通知写入进程可以退出了
 
     write_process.join()
