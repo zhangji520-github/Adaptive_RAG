@@ -34,7 +34,7 @@ route_prompt = ChatPromptTemplate.from_messages(
 
 question_router = route_prompt | llm.with_structured_output(RouteQueryAnalysis)
 
-# 第一个路由函数，判断检索到的文档是否与问题相关 如果相关返回"vector"，否则返回"web"
+# 第一个路由函数，判断检索到的文档是否与问题相关 如果相关返回"vector"，否则返回"web" 或者直接返回"direct_answer"
 def route_question(state: GraphState) -> str:
     """
     Route question to web search or RAG.
