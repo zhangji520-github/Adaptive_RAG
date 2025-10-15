@@ -27,6 +27,8 @@ qwen_embeddings = DashScopeEmbeddings(
     # DashScopeEmbeddings 内部会自动处理批处理大小限制
 )
 
+
+
 # 全模态大模型
 # multiModal_llm = ChatOpenAI(
 #     model='qwen-omni-turbo',
