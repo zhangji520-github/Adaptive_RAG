@@ -58,5 +58,5 @@ if resp_video.status_code == HTTPStatus.OK:
 
     print(f'维度为 {len(embedding)}')
     print(f'前5个值: {json.dumps(embedding[:5], indent=4)}')          # json打印更美观
-    print(f'image_tokens: {usage['input_tokens_details']['image_tokens']},text_tokens: {usage['input_tokens_details']['text_tokens']},total_tokens: {usage["total_tokens"]}')
+    print(f'image_tokens: {usage["input_tokens_details"]["image_tokens"]},text_tokens: {usage["input_tokens_details"]["text_tokens"]},total_tokens: {usage["total_tokens"]}')
     print(f'类型为 {resp_video.output["embeddings"][0]["type"]}')   # image or text or video

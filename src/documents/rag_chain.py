@@ -3,7 +3,7 @@ import os
 # 添加上级目录到 Python 路径
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from llm_utils import qwen_embeddings, openai_embedding, llm
+from llm_utils import openai_embedding, llm
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 

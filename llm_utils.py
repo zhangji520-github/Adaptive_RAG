@@ -1,6 +1,5 @@
 from langchain_openai import ChatOpenAI
-from env_utils import OPENAI_API_KEY, OPENAI_BASE_URL, LOCAL_BASE_URL, DEEPSEEK_BASE_URL, DEEPSEEK_API_KEY, \
-    MODELSCOPE_API_KEY, MODELSCOPE_BASE_URL, QWEN_BASE_URL, GLM_API_KEY, GLM_BASE_URL, SILICONFLOW_API_KEY,SILICONFLOW_BASE_URL
+from env_utils import OPENAI_API_KEY, OPENAI_BASE_URL
 import os
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.embeddings import DashScopeEmbeddings
